@@ -60,6 +60,8 @@
 # define DISTRHO_UI_USER_RESIZABLE 0
 #endif
 
+#include "godot_distrho_dynamic_info.h"
+
 START_NAMESPACE_DISTRHO
 
 // -----------------------------------------------------------------------
@@ -392,7 +394,7 @@ struct UI::PrivateData {
           fileRequestCallbackFunc(nullptr)
     {
       #if defined(DISTRHO_PLUGIN_TARGET_DSSI) || defined(DISTRHO_PLUGIN_TARGET_LV2)
-        parameterOffset += DISTRHO_PLUGIN_NUM_INPUTS + DISTRHO_PLUGIN_NUM_OUTPUTS;
+        parameterOffset += GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
        #if DISTRHO_PLUGIN_WANT_LATENCY
         parameterOffset += 1;
        #endif

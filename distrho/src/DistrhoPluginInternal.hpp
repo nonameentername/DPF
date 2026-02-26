@@ -25,6 +25,9 @@
 
 #include <set>
 
+#include <vector>
+#include "godot_distrho_dynamic_info.h"
+
 START_NAMESPACE_DISTRHO
 
 // -----------------------------------------------------------------------
@@ -147,7 +150,7 @@ struct Plugin::PrivateData {
     bool isProcessing;
 
 #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-    AudioPortWithBusId* audioPorts;
+    std::vector<AudioPortWithBusId> audioPorts;
 #endif
 
     uint32_t   parameterCount;
@@ -191,7 +194,7 @@ struct Plugin::PrivateData {
           isSelfTest(d_nextPluginIsSelfTest),
           isProcessing(false),
 #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-          audioPorts(nullptr),
+          audioPorts(0),
 #endif
           parameterCount(0),
           parameterOffset(0),
@@ -221,7 +224,7 @@ struct Plugin::PrivateData {
         DISTRHO_SAFE_ASSERT(d_isNotZero(sampleRate));
 
 #if defined(DISTRHO_PLUGIN_TARGET_DSSI) || defined(DISTRHO_PLUGIN_TARGET_LV2)
-        parameterOffset += DISTRHO_PLUGIN_NUM_INPUTS + DISTRHO_PLUGIN_NUM_OUTPUTS;
+        parameterOffset += GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
 # if DISTRHO_PLUGIN_WANT_LATENCY
         parameterOffset += 1;
 # endif
@@ -239,15 +242,17 @@ struct Plugin::PrivateData {
 #ifdef DISTRHO_PLUGIN_TARGET_VST3
         parameterOffset += kVst3InternalParameterCount;
 #endif
+        audioPorts.resize(GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + GodotDistrhoDynamicInfo::get_instance().get_number_outputs());
     }
 
     ~PrivateData() noexcept
     {
 #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        if (audioPorts != nullptr)
+        if (audioPorts.size() > 0)
         {
-            delete[] audioPorts;
-            audioPorts = nullptr;
+            audioPorts.clear();
+            //delete[] audioPorts;
+            //audioPorts = nullptr;
         }
 #endif
 
@@ -413,11 +418,11 @@ public:
         {
             uint32_t j=0;
 # if DISTRHO_PLUGIN_NUM_INPUTS > 0
-            for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i, ++j)
+            for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i, ++j)
                 fPlugin->initAudioPort(true, i, fData->audioPorts[j]);
 # endif
 # if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-            for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i, ++j)
+            for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i, ++j)
                 fPlugin->initAudioPort(false, i, fData->audioPorts[j]);
 # endif
         }
@@ -430,7 +435,7 @@ public:
             std::set<uint32_t> portGroupIndices;
 
 #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-            for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+            for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs()+GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i)
                 portGroupIndices.insert(fData->audioPorts[i].groupId);
 #endif
             for (uint32_t i=0, count=fData->parameterCount; i < count; ++i)
@@ -560,17 +565,17 @@ public:
         if (input)
         {
 # if DISTRHO_PLUGIN_NUM_INPUTS > 0
-            DISTRHO_SAFE_ASSERT_RETURN(index < DISTRHO_PLUGIN_NUM_INPUTS,  sFallbackAudioPort);
+            DISTRHO_SAFE_ASSERT_RETURN(index < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(),  sFallbackAudioPort);
 # endif
         }
         else
         {
 # if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-            DISTRHO_SAFE_ASSERT_RETURN(index < DISTRHO_PLUGIN_NUM_OUTPUTS, sFallbackAudioPort);
+            DISTRHO_SAFE_ASSERT_RETURN(index < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(), sFallbackAudioPort);
 # endif
         }
 
-        return fData->audioPorts[index + (input ? 0 : DISTRHO_PLUGIN_NUM_INPUTS)];
+        return fData->audioPorts[index + (input ? 0 : GodotDistrhoDynamicInfo::get_instance().get_number_inputs())];
     }
 
     uint32_t getAudioPortHints(const bool input, const uint32_t index) const noexcept
@@ -587,7 +592,7 @@ public:
         if (input)
         {
            #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-            for (uint32_t i=0; i<DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+            for (uint32_t i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             {
                 if (fData->audioPorts[i].groupId == groupId)
                     ++numPorts;
@@ -597,9 +602,9 @@ public:
         else
         {
            #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-            for (uint32_t i=0; i<DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+            for (uint32_t i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i)
             {
-                if (fData->audioPorts[i + DISTRHO_PLUGIN_NUM_INPUTS].groupId == groupId)
+                if (fData->audioPorts[i + GodotDistrhoDynamicInfo::get_instance().get_number_inputs()].groupId == groupId)
                     ++numPorts;
             }
            #endif

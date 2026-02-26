@@ -36,6 +36,8 @@
 
 #include "xaymar-vst2/vst.h"
 
+#include "godot_distrho_dynamic_info.h"
+
 START_NAMESPACE_DISTRHO
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -1687,8 +1689,8 @@ const vst_effect* VSTPluginMain(const vst_host_callback audioMaster)
     // plugin fields
     effect->num_params   = numParams;
     effect->num_programs = 1;
-    effect->num_inputs   = DISTRHO_PLUGIN_NUM_INPUTS;
-    effect->num_outputs  = DISTRHO_PLUGIN_NUM_OUTPUTS;
+    effect->num_inputs   = GodotDistrhoDynamicInfo::get_instance().get_number_inputs();
+    effect->num_outputs  = GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
 
     // plugin flags
     effect->flags |= 1 << 4; // uses process_float

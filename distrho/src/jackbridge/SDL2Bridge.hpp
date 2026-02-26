@@ -256,7 +256,7 @@ struct SDL2Bridge : NativeBridge {
         for (uint i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS_2; ++i)
         {
             for (uint j=0; j < numFrames; ++j)
-                fstream[j * DISTRHO_PLUGIN_NUM_OUTPUTS_2 + i] = self->audioBuffers[DISTRHO_PLUGIN_NUM_INPUTS + i][j];
+                fstream[j * DISTRHO_PLUGIN_NUM_OUTPUTS_2 + i] = self->audioBuffers[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + i][j];
         }
     }
    #endif

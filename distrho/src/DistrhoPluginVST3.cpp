@@ -58,6 +58,8 @@
 #include <string>
 #include <vector>
 
+#include "godot_distrho_dynamic_info.h"
+
 START_NAMESPACE_DISTRHO
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -620,11 +622,19 @@ public:
        #endif
 
        #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-        std::memset(fEnabledInputs, 0, sizeof(fEnabledInputs));
+        fEnabledInputs.resize(GodotDistrhoDynamicInfo::get_instance().get_number_inputs());
+        for (int i = 0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); i++) {
+            fEnabledInputs[i] = false;
+        }
+        //std::memset(fEnabledInputs, 0, sizeof(fEnabledInputs));
         fillInBusInfoDetails<true>();
        #endif
        #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        std::memset(fEnabledOutputs, 0, sizeof(fEnabledOutputs));
+        fEnabledOutputs.resize(GodotDistrhoDynamicInfo::get_instance().get_number_outputs());
+        for (int i = 0; i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); i++) {
+            fEnabledOutputs[i] = false;
+        }
+        //std::memset(fEnabledOutputs, 0, sizeof(fEnabledOutputs));
         fillInBusInfoDetails<false>();
        #endif
 
@@ -894,7 +904,7 @@ public:
             if (busDirection == V3_INPUT)
             {
                #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-                for (uint32_t i=0; i<DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+                for (uint32_t i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
                 {
                     const AudioPortWithBusId& port(fPlugin.getAudioPort(true, i));
 
@@ -906,7 +916,7 @@ public:
             else
             {
                #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-                for (uint32_t i=0; i<DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+                for (uint32_t i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i)
                 {
                     const AudioPortWithBusId& port(fPlugin.getAudioPort(false, i));
 
@@ -920,7 +930,7 @@ public:
 
         return V3_OK;
 
-       #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS == 0
+       #if false //DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS == 0
         // unused
         (void)state;
        #endif
@@ -1461,8 +1471,8 @@ public:
             return V3_OK;
         }
 
-        const float* inputs[DISTRHO_PLUGIN_NUM_INPUTS != 0 ? DISTRHO_PLUGIN_NUM_INPUTS : 1];
-        /* */ float* outputs[DISTRHO_PLUGIN_NUM_OUTPUTS != 0 ? DISTRHO_PLUGIN_NUM_OUTPUTS : 1];
+        const float* inputs[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() != 0 ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : 1];
+        /* */ float* outputs[GodotDistrhoDynamicInfo::get_instance().get_number_outputs() != 0 ? GodotDistrhoDynamicInfo::get_instance().get_number_outputs() : 1];
 
         std::memset(fDummyAudioBuffer, 0, sizeof(float)*data->nframes);
 
@@ -1474,8 +1484,8 @@ public:
                 for (int32_t b = 0; b < data->num_input_buses; ++b) {
                     for (int32_t j = 0; j < data->inputs[b].num_channels; ++j)
                     {
-                        DISTRHO_SAFE_ASSERT_INT_BREAK(i < DISTRHO_PLUGIN_NUM_INPUTS, i);
-                        if (!fEnabledInputs[i] && i < DISTRHO_PLUGIN_NUM_INPUTS) {
+                        DISTRHO_SAFE_ASSERT_INT_BREAK(i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(), i);
+                        if (!fEnabledInputs[i] && i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs()) {
                             inputs[i++] = fDummyAudioBuffer;
                             continue;
                         }
@@ -1485,7 +1495,7 @@ public:
                 }
             }
            #endif
-            for (; i < std::max(1, DISTRHO_PLUGIN_NUM_INPUTS); ++i)
+            for (; i < std::max(1, GodotDistrhoDynamicInfo::get_instance().get_number_inputs()); ++i)
                 inputs[i] = fDummyAudioBuffer;
         }
 
@@ -1497,8 +1507,8 @@ public:
                 for (int32_t b = 0; b < data->num_output_buses; ++b) {
                     for (int32_t j = 0; j < data->outputs[b].num_channels; ++j)
                     {
-                        DISTRHO_SAFE_ASSERT_INT_BREAK(i < DISTRHO_PLUGIN_NUM_OUTPUTS, i);
-                        if (!fEnabledOutputs[i] && i < DISTRHO_PLUGIN_NUM_OUTPUTS) {
+                        DISTRHO_SAFE_ASSERT_INT_BREAK(i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(), i);
+                        if (!fEnabledOutputs[i] && i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs()) {
                             outputs[i++] = fDummyAudioBuffer;
                             continue;
                         }
@@ -1508,7 +1518,7 @@ public:
                 }
             }
            #endif
-            for (; i < std::max(1, DISTRHO_PLUGIN_NUM_OUTPUTS); ++i)
+            for (; i < std::max(1, GodotDistrhoDynamicInfo::get_instance().get_number_outputs()); ++i)
                 outputs[i] = fDummyAudioBuffer;
         }
 
@@ -2456,10 +2466,10 @@ private:
     float* fDummyAudioBuffer;
     bool* fParameterValuesChangedDuringProcessing; // basic offset + real
    #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-    bool fEnabledInputs[DISTRHO_PLUGIN_NUM_INPUTS];
+    std::vector<bool> fEnabledInputs;
    #endif
    #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-    bool fEnabledOutputs[DISTRHO_PLUGIN_NUM_OUTPUTS];
+    std::vector<bool> fEnabledOutputs;
    #endif
    #if DPF_VST3_USES_SEPARATE_CONTROLLER
     const bool fIsComponent;
@@ -2498,9 +2508,9 @@ private:
     template<bool isInput>
     void fillInBusInfoDetails()
     {
-        constexpr const uint32_t numPorts = isInput ? DISTRHO_PLUGIN_NUM_INPUTS : DISTRHO_PLUGIN_NUM_OUTPUTS;
+        const uint32_t numPorts = isInput ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
         BusInfo& busInfo(isInput ? inputBuses : outputBuses);
-        bool* const enabledPorts = isInput
+        std::vector<bool> enabledPorts = isInput
                                 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
                                  ? fEnabledInputs
                                 #else
@@ -2581,7 +2591,7 @@ private:
     template<bool isInput>
     v3_result getAudioBusInfo(const uint32_t busId, v3_bus_info* const info) const
     {
-        constexpr const uint32_t numPorts = isInput ? DISTRHO_PLUGIN_NUM_INPUTS : DISTRHO_PLUGIN_NUM_OUTPUTS;
+        const uint32_t numPorts = isInput ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
         const BusInfo& busInfo(isInput ? inputBuses : outputBuses);
 
         int32_t numChannels;
@@ -2777,7 +2787,7 @@ private:
     template<bool isInput>
     bool getAudioBusArrangement(uint32_t busId, v3_speaker_arrangement* const speaker) const
     {
-        constexpr const uint32_t numPorts = isInput ? DISTRHO_PLUGIN_NUM_INPUTS : DISTRHO_PLUGIN_NUM_OUTPUTS;
+        const uint32_t numPorts = isInput ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
         const BusInfo& busInfo(isInput ? inputBuses : outputBuses);
 
         for (uint32_t i=0; i<numPorts; ++i)
@@ -2801,9 +2811,9 @@ private:
     template<bool isInput>
     bool setAudioBusArrangement(v3_speaker_arrangement* const speakers, const uint32_t numBuses)
     {
-        constexpr const uint32_t numPorts = isInput ? DISTRHO_PLUGIN_NUM_INPUTS : DISTRHO_PLUGIN_NUM_OUTPUTS;
+        const uint32_t numPorts = isInput ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
         BusInfo& busInfo(isInput ? inputBuses : outputBuses);
-        bool* const enabledPorts = isInput
+        std::vector<bool> enabledPorts = isInput
                                 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
                                  ? fEnabledInputs
                                 #else

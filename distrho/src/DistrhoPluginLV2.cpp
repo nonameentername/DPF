@@ -34,6 +34,9 @@
 #include "lv2/lv2_programs.h"
 #include "lv2/control-input-port-change-request.h"
 
+#include <vector>
+#include "godot_distrho_dynamic_info.h"
+
 #ifdef DISTRHO_PLUGIN_LICENSED_FOR_MOD
 # include "libmodla.h"
 #endif
@@ -92,14 +95,16 @@ public:
           fWorker(worker)
     {
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        fPortAudioIns.resize(GodotDistrhoDynamicInfo::get_instance().get_number_inputs());
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             fPortAudioIns[i] = nullptr;
 #else
         fPortAudioIns = nullptr;
 #endif
 
 #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        fPortAudioOuts.resize(GodotDistrhoDynamicInfo::get_instance().get_number_outputs());
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i)
             fPortAudioOuts[i] = nullptr;
 #else
         fPortAudioOuts = nullptr;
@@ -145,7 +150,7 @@ public:
                 const String& statekey(fPlugin.getStateKey(i));
                 fStateMap[statekey] = fPlugin.getStateDefaultValue(i);
 
-                const String lv2key(DISTRHO_PLUGIN_URI "#" + statekey);
+                const String lv2key(GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#" + statekey);
                 const LV2_URID urid = fUrids[i] = uridMap->map(uridMap->handle, lv2key.buffer());
                 fUridStateMap[urid] = statekey;
             }
@@ -267,7 +272,7 @@ public:
         uint32_t index = 0;
 
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
         {
             if (port == index++)
             {
@@ -278,7 +283,7 @@ public:
 #endif
 
 #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i)
         {
             if (port == index++)
             {
@@ -625,13 +630,13 @@ public:
            #endif
 
            #if DISTRHO_PLUGIN_WANT_MIDI_INPUT
-            fPlugin.run(fPortAudioIns, fPortAudioOuts, sampleCount, fMidiEvents, midiEventCount);
+            fPlugin.run(fPortAudioIns.data(), fPortAudioOuts.data(), sampleCount, fMidiEvents, midiEventCount);
            #else
             fPlugin.run(fPortAudioIns, fPortAudioOuts, sampleCount);
            #endif
 
            #ifdef DISTRHO_PLUGIN_LICENSED_FOR_MOD
-            for (uint32_t i=0; i<DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+            for (uint32_t i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_output(); ++i)
                 mod_license_run_silence(fRunCount, fPortAudioOuts[i], sampleCount, i);
            #endif
 
@@ -946,7 +951,7 @@ public:
 
                 if (hints & kStateIsHostReadable)
                 {
-                    lv2key = DISTRHO_PLUGIN_URI "#";
+                    lv2key = GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#";
                     urid = (hints & kStateIsFilenamePath) == kStateIsFilenamePath
                          ? fURIDs.atomPath
                          : fURIDs.atomString;
@@ -1029,7 +1034,7 @@ public:
 
             if (hints & kStateIsHostReadable)
             {
-                lv2key = DISTRHO_PLUGIN_URI "#";
+                lv2key = GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#";
                 urid = (hints & kStateIsFilenamePath) == kStateIsFilenamePath
                      ? fURIDs.atomPath
                      : fURIDs.atomString;
@@ -1185,12 +1190,12 @@ private:
 
     // LV2 ports
    #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-    const float*  fPortAudioIns[DISTRHO_PLUGIN_NUM_INPUTS];
+    std::vector<const float*>  fPortAudioIns;
    #else
     const float** fPortAudioIns;
    #endif
    #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-    float*  fPortAudioOuts[DISTRHO_PLUGIN_NUM_OUTPUTS];
+    std::vector<float*>  fPortAudioOuts;
    #else
     float** fPortAudioOuts;
    #endif
@@ -1505,7 +1510,7 @@ static LV2_Handle lv2_instantiate(const LV2_Descriptor*, double sampleRate, cons
 #endif
 
 #ifdef DISTRHO_PLUGIN_LICENSED_FOR_MOD
-    mod_license_check(features, DISTRHO_PLUGIN_URI);
+    mod_license_check(features, GodotDistrhoDynamicInfo::get_instance().get_plugin_uri());
 #endif
 
     d_nextBufferSize = 0;
@@ -1688,7 +1693,7 @@ static const void* lv2_extension_data(const char* uri)
 
 // -----------------------------------------------------------------------
 
-static const LV2_Descriptor sLv2Descriptor = {
+static LV2_Descriptor sLv2Descriptor = {
     DISTRHO_PLUGIN_URI,
     lv2_instantiate,
     lv2_connect_port,
@@ -1706,6 +1711,9 @@ END_NAMESPACE_DISTRHO
 DISTRHO_PLUGIN_EXPORT
 const LV2_Descriptor* lv2_descriptor(uint32_t index)
 {
+    LV2_Descriptor* mutable_desc = const_cast<LV2_Descriptor*>(&sLv2Descriptor);
+    mutable_desc->URI = GodotDistrhoDynamicInfo::get_instance().get_plugin_uri_cstr();
+
     USE_NAMESPACE_DISTRHO
     return (index == 0) ? &sLv2Descriptor : nullptr;
 }

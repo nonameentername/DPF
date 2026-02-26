@@ -44,7 +44,7 @@ Plugin::Plugin(uint32_t parameterCount, uint32_t programCount, uint32_t stateCou
     : pData(new PrivateData())
 {
    #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-    pData->audioPorts = new AudioPortWithBusId[DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS];
+    pData->audioPorts.resize(GodotDistrhoDynamicInfo::get_instance().get_number_inputs()+GodotDistrhoDynamicInfo::get_instance().get_number_outputs());
    #endif
 
    #if defined(DPF_ABORT_ON_ERROR) || defined(DPF_RUNTIME_TESTING)

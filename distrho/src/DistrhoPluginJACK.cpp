@@ -53,6 +53,8 @@
 # include <xmmintrin.h>
 #endif
 
+#include <vector>
+
 #ifndef JACK_METADATA_ORDER
 # define JACK_METADATA_ORDER "http://jackaudio.org/metadata/order"
 #endif
@@ -157,7 +159,8 @@ public:
     {
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0 || DISTRHO_PLUGIN_NUM_OUTPUTS > 0
 # if DISTRHO_PLUGIN_NUM_INPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        fPortAudioIns.resize(GodotDistrhoDynamicInfo::get_instance().get_number_inputs());
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
         {
             const AudioPort& port(fPlugin.getAudioPort(true, i));
             ulong hints = JackPortIsInput;
@@ -168,14 +171,15 @@ public:
         }
 # endif
 # if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        fPortAudioOuts.resize(GodotDistrhoDynamicInfo::get_instance().get_number_outputs());
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
         {
             const AudioPort& port(fPlugin.getAudioPort(false, i));
             ulong hints = JackPortIsOutput;
             if (port.hints & kAudioPortIsCV)
                 hints |= JackPortIsControlVoltage;
             fPortAudioOuts[i] = jackbridge_port_register(fClient, port.symbol, JACK_DEFAULT_AUDIO_TYPE, hints, 0);
-            setAudioPortMetadata(port, fPortAudioOuts[i], DISTRHO_PLUGIN_NUM_INPUTS+i);
+            setAudioPortMetadata(port, fPortAudioOuts[i], GodotDistrhoDynamicInfo::get_instance().get_number_inputs()+i);
         }
 # endif
 #endif
@@ -293,7 +297,7 @@ public:
         fPortEventsIn = nullptr;
 
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
         {
             jackbridge_port_unregister(fClient, fPortAudioIns[i]);
             fPortAudioIns[i] = nullptr;
@@ -301,7 +305,7 @@ public:
 #endif
 
 #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
         {
             jackbridge_port_unregister(fClient, fPortAudioOuts[i]);
             fPortAudioOuts[i] = nullptr;
@@ -364,18 +368,18 @@ protected:
     void jackProcess(const jack_nframes_t nframes)
     {
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-        const float* audioIns[DISTRHO_PLUGIN_NUM_INPUTS];
+        const float* audioIns[GodotDistrhoDynamicInfo::get_instance().get_number_inputs()];
 
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             audioIns[i] = (const float*)jackbridge_port_get_buffer(fPortAudioIns[i], nframes);
 #else
         static const float** audioIns = nullptr;
 #endif
 
 #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        float* audioOuts[DISTRHO_PLUGIN_NUM_OUTPUTS];
+        float* audioOuts[GodotDistrhoDynamicInfo::get_instance().get_number_inputs()];
 
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             audioOuts[i] = (float*)jackbridge_port_get_buffer(fPortAudioOuts[i], nframes);
 #else
         static float** audioOuts = nullptr;
@@ -594,10 +598,10 @@ private:
     jack_client_t* fClient;
 
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-    jack_port_t* fPortAudioIns[DISTRHO_PLUGIN_NUM_INPUTS];
+    std::vector<jack_port_t*> fPortAudioIns;
 #endif
 #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-    jack_port_t* fPortAudioOuts[DISTRHO_PLUGIN_NUM_OUTPUTS];
+    std::vector<jack_port_t*> fPortAudioOuts;
 #endif
     jack_port_t* fPortEventsIn;
 #if DISTRHO_PLUGIN_WANT_MIDI_OUTPUT
@@ -824,11 +828,11 @@ protected:
         plugin.activate();
 
         float buffer[256];
-        const float* inputs[DISTRHO_PLUGIN_NUM_INPUTS > 0 ? DISTRHO_PLUGIN_NUM_INPUTS : 1];
-        float* outputs[DISTRHO_PLUGIN_NUM_OUTPUTS > 0 ? DISTRHO_PLUGIN_NUM_OUTPUTS : 1];
-        for (int i=0; i<DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        const float* inputs[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() > 0 ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : 1];
+        float* outputs[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() > 0 ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : 1];
+        for (int i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             inputs[i] = buffer;
-        for (int i=0; i<DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        for (int i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             outputs[i] = buffer;
 
         while (! shouldThreadExit())
@@ -880,11 +884,11 @@ bool runSelfTests()
         plugin.activate();
 
         float buffer[128] = {};
-        const float* inputs[DISTRHO_PLUGIN_NUM_INPUTS > 0 ? DISTRHO_PLUGIN_NUM_INPUTS : 1];
-        float* outputs[DISTRHO_PLUGIN_NUM_OUTPUTS > 0 ? DISTRHO_PLUGIN_NUM_OUTPUTS : 1];
-        for (int i=0; i<DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        const float* inputs[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() > 0 ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : 1];
+        float* outputs[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() > 0 ? GodotDistrhoDynamicInfo::get_instance().get_number_inputs() : 1];
+        for (int i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             inputs[i] = buffer;
-        for (int i=0; i<DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        for (int i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             outputs[i] = buffer;
 
        #if DISTRHO_PLUGIN_WANT_MIDI_INPUT

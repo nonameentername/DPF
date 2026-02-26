@@ -385,7 +385,7 @@ struct RtAudioBridge : NativeBridge {
         if (float* const outsPtr = static_cast<float*>(outputBuffer))
         {
             for (uint i=0; i<DISTRHO_PLUGIN_NUM_OUTPUTS_2; ++i)
-                self->audioBuffers[DISTRHO_PLUGIN_NUM_INPUTS + i] = outsPtr + (i * numFrames);
+                self->audioBuffers[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + i] = outsPtr + (i * numFrames);
         }
        #endif
 

@@ -31,6 +31,8 @@
 #include "lv2/lv2_kxstudio_properties.h"
 #include "lv2/lv2_programs.h"
 
+#include "godot_distrho_dynamic_info.h" 
+
 #ifndef DISTRHO_PLUGIN_LV2_STATE_PREFIX
 # define DISTRHO_PLUGIN_LV2_STATE_PREFIX "urn:distrho:"
 #endif
@@ -208,7 +210,7 @@ public:
                     const char* const dpf_lv2_key = fUridUnmap->unmap(fUridUnmap->handle, dpf_lv2_urid);
                     DISTRHO_SAFE_ASSERT_RETURN(dpf_lv2_key != nullptr,);
 
-                    /*constexpr*/ const size_t reqLen = std::strlen(DISTRHO_PLUGIN_URI "#");
+                    /*constexpr*/ const size_t reqLen = std::strlen(GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#");
                     DISTRHO_SAFE_ASSERT_RETURN(std::strlen(dpf_lv2_key) > reqLen,);
 
                     const char* const key   = dpf_lv2_key + reqLen;
@@ -388,7 +390,7 @@ private:
     {
         DISTRHO_SAFE_ASSERT_RETURN(fWriteFunction != nullptr,);
 
-        const uint32_t eventInPortIndex = DISTRHO_PLUGIN_NUM_INPUTS + DISTRHO_PLUGIN_NUM_OUTPUTS;
+        const uint32_t eventInPortIndex = GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
 
         // join key and value
         String tmpStr;
@@ -437,7 +439,7 @@ private:
         if (channel > 0xF)
             return;
 
-        const uint32_t eventInPortIndex = DISTRHO_PLUGIN_NUM_INPUTS + DISTRHO_PLUGIN_NUM_OUTPUTS;
+        const uint32_t eventInPortIndex = GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + GodotDistrhoDynamicInfo::get_instance().get_number_outputs();
 
         LV2_Atom_MidiEvent atomMidiEvent;
         atomMidiEvent.atom.size = 3;
@@ -465,7 +467,7 @@ private:
         if (fUiRequestValue == nullptr)
             return false;
 
-        String dpf_lv2_key(DISTRHO_PLUGIN_URI "#");
+        String dpf_lv2_key(GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#");
         dpf_lv2_key += key;
 
         const int r = fUiRequestValue->request(fUiRequestValue->handle,
@@ -493,7 +495,7 @@ static LV2UI_Handle lv2ui_instantiate(const LV2UI_Descriptor*,
                                       LV2UI_Widget* const widget,
                                       const LV2_Feature* const* const features)
 {
-    if (uri == nullptr || std::strcmp(uri, DISTRHO_PLUGIN_URI) != 0)
+    if (uri == nullptr || std::strcmp(uri, GodotDistrhoDynamicInfo::get_instance().get_plugin_uri()) != 0)
     {
         d_stderr("Invalid plugin URI");
         return nullptr;
@@ -715,7 +717,7 @@ static const void* lv2ui_extension_data(const char* uri)
 
 // -----------------------------------------------------------------------
 
-static const LV2UI_Descriptor sLv2UiDescriptor = {
+static LV2UI_Descriptor sLv2UiDescriptor = {
     DISTRHO_UI_URI,
     lv2ui_instantiate,
     lv2ui_cleanup,
@@ -730,6 +732,9 @@ END_NAMESPACE_DISTRHO
 DISTRHO_PLUGIN_EXPORT
 const LV2UI_Descriptor* lv2ui_descriptor(uint32_t index)
 {
+    LV2UI_Descriptor* mutable_desc = const_cast<LV2UI_Descriptor*>(&sLv2UiDescriptor);
+    mutable_desc->URI = GodotDistrhoDynamicInfo::get_instance().get_ui_uri_cstr();
+
     USE_NAMESPACE_DISTRHO
     return (index == 0) ? &sLv2UiDescriptor : nullptr;
 }
@@ -801,7 +806,7 @@ static void lv2ui_write_function(LV2UI_Controller controller,
                 // d_stdout("lv2ui_write_function %s %s", key, value);
 
                 String urikey;
-                urikey  = DISTRHO_PLUGIN_URI "#";
+                urikey  = GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#";
                 urikey += key;
 
                 mhandle->patch_set(urikey, value);
@@ -873,7 +878,7 @@ LV2UI_Handle modgui_init(const char* const className, _custom_param_set param_se
 
     LV2UI_Widget widget;
     const LV2UI_Handle handle = lv2ui_instantiate(&sLv2UiDescriptor,
-                                                  DISTRHO_PLUGIN_URI,
+                                                  GodotDistrhoDynamicInfo::get_instance().get_plugin_uri(),
                                                   "", // bundlePath
                                                   lv2ui_write_function,
                                                   mhandle,
@@ -896,8 +901,8 @@ void modgui_param_set(const LV2UI_Handle handle, const uint32_t index, const flo
 DISTRHO_PLUGIN_EXPORT
 void modgui_patch_set(const LV2UI_Handle handle, const char* const uri, const char* const value)
 {
-    static const constexpr uint32_t URI_PREFIX_LEN = sizeof(DISTRHO_PLUGIN_URI);
-    DISTRHO_SAFE_ASSERT_RETURN(std::strncmp(uri, DISTRHO_PLUGIN_URI "#", URI_PREFIX_LEN) == 0,);
+    static const constexpr uint32_t URI_PREFIX_LEN = sizeof(GodotDistrhoDynamicInfo::get_instance().get_plugin_uri());
+    DISTRHO_SAFE_ASSERT_RETURN(std::strncmp(uri, GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#", URI_PREFIX_LEN) == 0,);
 
     const uint32_t keySize = std::strlen(uri + URI_PREFIX_LEN) + 1;
     const uint32_t valueSize = std::strlen(value) + 1;
@@ -911,7 +916,7 @@ void modgui_patch_set(const LV2UI_Handle handle, const char* const uri, const ch
     std::memcpy(static_cast<uint8_t*>(static_cast<void*>(atom + 1)) + keySize, value, valueSize);
 
     lv2ui_port_event(static_cast<ModguiHandle*>(handle)->handle,
-                     DISTRHO_PLUGIN_NUM_INPUTS + DISTRHO_PLUGIN_NUM_OUTPUTS, // events input port
+                     GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + GodotDistrhoDynamicInfo::get_instance().get_number_outputs(), // events input port
                      atomSize, kUriAtomEventTransfer, atom);
 
     std::free(atom);

@@ -65,7 +65,7 @@ struct NativeBridge {
         kPortMaskOutputMIDI = kPortMaskOutput|kPortMaskMIDI,
     };
 #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-    float* audioBuffers[DISTRHO_PLUGIN_NUM_INPUTS + DISTRHO_PLUGIN_NUM_OUTPUTS];
+    float** audioBuffers;
     float* audioBufferStorage;
 #endif
 #if DISTRHO_PLUGIN_WANT_MIDI_INPUT || DISTRHO_PLUGIN_WANT_MIDI_OUTPUT
@@ -96,7 +96,7 @@ struct NativeBridge {
           jackProcessArg(nullptr),
           jackBufferSizeArg(nullptr)
        #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-        , audioBuffers()
+        , audioBuffers(0)
         , audioBufferStorage(nullptr)
        #endif
        #if DISTRHO_PLUGIN_WANT_MIDI_INPUT || DISTRHO_PLUGIN_WANT_MIDI_OUTPUT
@@ -104,6 +104,7 @@ struct NativeBridge {
        #endif
     {
        #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
+        audioBuffers = new float*[GodotDistrhoDynamicInfo::get_instance().get_number_inputs() + GodotDistrhoDynamicInfo::get_instance().get_number_outputs()];
         std::memset(audioBuffers, 0, sizeof(audioBuffers));
        #endif
     }
@@ -232,14 +233,14 @@ struct NativeBridge {
         if (audio)
         {
            #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-            audioBufferStorage = new float[bufferSize*(DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS)];
+            audioBufferStorage = new float[bufferSize*(GodotDistrhoDynamicInfo::get_instance().get_number_inputs()+GodotDistrhoDynamicInfo::get_instance().get_number_outputs())];
 
-            for (uint i=0; i<DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+            for (uint i=0; i<GodotDistrhoDynamicInfo::get_instance().get_number_inputs()+GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i)
                 audioBuffers[i] = audioBufferStorage + (bufferSize * i);
            #endif
 
            #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-            std::memset(audioBufferStorage, 0, sizeof(float)*bufferSize*DISTRHO_PLUGIN_NUM_INPUTS);
+            std::memset(audioBufferStorage, 0, sizeof(float)*bufferSize*GodotDistrhoDynamicInfo::get_instance().get_number_inputs());
            #endif
         }
 
@@ -258,6 +259,7 @@ struct NativeBridge {
     void freeBuffers()
     {
        #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
+        delete[] audioBuffers;
         delete[] audioBufferStorage;
         audioBufferStorage = nullptr;
        #endif
@@ -314,7 +316,7 @@ struct NativeBridge {
 
        #if DISTRHO_PLUGIN_NUM_INPUTS+DISTRHO_PLUGIN_NUM_OUTPUTS > 0
         if (portMask & (kPortMaskAudio|kPortMaskCV))
-            return audioBuffers[(portMask & kPortMaskInput ? 0 : DISTRHO_PLUGIN_NUM_INPUTS) + (portMask & 0x0fff)];
+            return audioBuffers[(portMask & kPortMaskInput ? 0 : GodotDistrhoDynamicInfo::get_instance().get_number_inputs()) + (portMask & 0x0fff)];
        #endif
        #if DISTRHO_PLUGIN_WANT_MIDI_INPUT
         if ((portMask & kPortMaskInputMIDI) == kPortMaskInputMIDI)

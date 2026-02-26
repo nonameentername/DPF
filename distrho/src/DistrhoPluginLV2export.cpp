@@ -39,6 +39,8 @@
 #include "lv2/lv2_programs.h"
 #include "lv2/control-input-port-change-request.h"
 
+#include "godot_distrho_dynamic_info.h" 
+
 #ifdef DISTRHO_PLUGIN_LICENSED_FOR_MOD
 # include "mod-license.h"
 #endif
@@ -289,7 +291,7 @@ void lv2_generate_ttl(const char* const basename)
 #endif
         manifestString += "\n";
 
-        manifestString += "<" DISTRHO_PLUGIN_URI ">\n";
+        manifestString += "<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + ">\n";
         manifestString += "    a lv2:Plugin ;\n";
         manifestString += "    lv2:binary <" + pluginDLL + "." DISTRHO_DLL_EXTENSION "> ;\n";
 #if DISTRHO_PLUGIN_USES_MODGUI
@@ -301,7 +303,7 @@ void lv2_generate_ttl(const char* const basename)
         manifestString += "\n";
 
 #if DISTRHO_PLUGIN_HAS_UI
-        manifestString += "<" DISTRHO_UI_URI ">\n";
+        manifestString += "<" + GodotDistrhoDynamicInfo::get_instance().get_ui_uri() + ">\n";
         manifestString += "    a ui:" DISTRHO_LV2_UI_TYPE " ;\n";
         manifestString += "    ui:binary <" + pluginUI + "." DISTRHO_DLL_EXTENSION "> ;\n";
 # if DISTRHO_PLUGIN_WANT_DIRECT_ACCESS
@@ -316,7 +318,7 @@ void lv2_generate_ttl(const char* const basename)
 #endif
 
 #if DISTRHO_PLUGIN_WANT_PROGRAMS
-        const String presetSeparator(std::strstr(DISTRHO_PLUGIN_URI, "#") != nullptr ? ":" : "#");
+        const String presetSeparator(std::strstr(GodotDistrhoDynamicInfo::get_instance().get_plugin_uri(), "#") != nullptr ? ":" : "#");
 
         char strBuf[0xff+1];
         strBuf[0xff] = '\0';
@@ -330,9 +332,9 @@ void lv2_generate_ttl(const char* const basename)
 
             const String& programName(plugin.getProgramName(i));
 
-            presetString  = "<" DISTRHO_PLUGIN_URI + presetSeparator + "preset" + strBuf + ">\n";
+            presetString  = "<" GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + presetSeparator + "preset" + strBuf + ">\n";
             presetString += "    a pset:Preset ;\n";
-            presetString += "    lv2:appliesTo <" DISTRHO_PLUGIN_URI "> ;\n";
+            presetString += "    lv2:appliesTo <" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "> ;\n";
 
             if (programName.contains('"'))
                 presetString += "    rdfs:label\"\"\"" + programName + "\"\"\" ;\n";
@@ -393,7 +395,7 @@ void lv2_generate_ttl(const char* const basename)
             if ((hints & kStateIsHostReadable) == 0x0)
                 continue;
 
-            pluginString += "<" DISTRHO_PLUGIN_URI "#" + plugin.getStateKey(i) + ">\n";
+            pluginString += "<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#" + plugin.getStateKey(i) + ">\n";
             pluginString += "    a lv2:Parameter ;\n";
             pluginString += "    rdfs:label \"" + plugin.getStateLabel(i) + "\" ;\n";
 
@@ -426,7 +428,7 @@ void lv2_generate_ttl(const char* const basename)
 #endif
 
         // plugin
-        pluginString += "<" DISTRHO_PLUGIN_URI ">\n";
+        pluginString += "<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + ">\n";
 #ifdef DISTRHO_PLUGIN_LV2_CATEGORY
         pluginString += "    a " DISTRHO_PLUGIN_LV2_CATEGORY ", lv2:Plugin, doap:Project ;\n";
 #elif DISTRHO_PLUGIN_IS_SYNTH
@@ -454,9 +456,9 @@ void lv2_generate_ttl(const char* const basename)
                 const String& key(plugin.getStateKey(i));
 
                 if ((hints & kStateIsHostWritable) == kStateIsHostWritable)
-                    pluginString += "    patch:writable <" DISTRHO_PLUGIN_URI "#" + key + "> ;\n";
+                    pluginString += "    patch:writable <" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#" + key + "> ;\n";
                 else
-                    pluginString += "    patch:readable <" DISTRHO_PLUGIN_URI "#" + key + "> ;\n";
+                    pluginString += "    patch:readable <" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#" + key + "> ;\n";
             }
             pluginString += "\n";
         }
@@ -464,7 +466,7 @@ void lv2_generate_ttl(const char* const basename)
 
         // UI
 #if DISTRHO_PLUGIN_HAS_UI
-        pluginString += "    ui:ui <" DISTRHO_UI_URI "> ;\n";
+        pluginString += "    ui:ui <" + GodotDistrhoDynamicInfo::get_instance().get_ui_uri() + "> ;\n";
         pluginString += "\n";
 #endif
 
@@ -472,7 +474,7 @@ void lv2_generate_ttl(const char* const basename)
             uint32_t portIndex = 0;
 
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-            for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i, ++portIndex)
+            for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i, ++portIndex)
             {
                 const AudioPort& port(plugin.getAudioPort(true, i));
                 const bool cvPortScaled = port.hints & kCVPortHasScaledRange;
@@ -498,7 +500,7 @@ void lv2_generate_ttl(const char* const basename)
 
                 if (port.groupId != kPortGroupNone)
                 {
-                    pluginString += "        pg:group <" DISTRHO_PLUGIN_URI "#portGroup_"
+                    pluginString += "        pg:group <" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#portGroup_"
                                     + plugin.getPortGroupSymbolForId(port.groupId) + "> ;\n";
 
                     switch (port.groupId)
@@ -559,7 +561,7 @@ void lv2_generate_ttl(const char* const basename)
                 if ((port.hints & (kAudioPortIsCV|kCVPortIsOptional)) == (kAudioPortIsCV|kCVPortIsOptional))
                     pluginString += "        lv2:portProperty lv2:connectionOptional;\n";
 
-                if (i+1 == DISTRHO_PLUGIN_NUM_INPUTS)
+                if (i+1 == GodotDistrhoDynamicInfo::get_instance().get_number_inputs())
                     pluginString += "    ] ;\n";
                 else
                     pluginString += "    ] ,\n";
@@ -568,7 +570,7 @@ void lv2_generate_ttl(const char* const basename)
 #endif
 
 #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-            for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i, ++portIndex)
+            for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i, ++portIndex)
             {
                 const AudioPort& port(plugin.getAudioPort(false, i));
                 const bool cvPortScaled = port.hints & kCVPortHasScaledRange;
@@ -594,7 +596,7 @@ void lv2_generate_ttl(const char* const basename)
 
                 if (port.groupId != kPortGroupNone)
                 {
-                    pluginString += "        pg:group <" DISTRHO_PLUGIN_URI "#portGroup_"
+                    pluginString += "        pg:group <" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#portGroup_"
                                     + plugin.getPortGroupSymbolForId(port.groupId) + "> ;\n";
 
                     switch (port.groupId)
@@ -652,7 +654,7 @@ void lv2_generate_ttl(const char* const basename)
                     }
                 }
 
-                if (i+1 == DISTRHO_PLUGIN_NUM_OUTPUTS)
+                if (i+1 == GodotDistrhoDynamicInfo::get_instance().get_number_outputs())
                     pluginString += "    ] ;\n";
                 else
                     pluginString += "    ] ,\n";
@@ -958,7 +960,7 @@ void lv2_generate_ttl(const char* const basename)
                     const uint32_t groupId = plugin.getParameterGroupId(i);
 
                     if (groupId != kPortGroupNone)
-                        pluginString += "        pg:group <" DISTRHO_PLUGIN_URI "#portGroup_"
+                        pluginString += "        pg:group <" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#portGroup_"
                                         + plugin.getPortGroupSymbolForId(groupId) + "> ;\n";
 
                 } // ! designated
@@ -1201,16 +1203,16 @@ void lv2_generate_ttl(const char* const basename)
                 DISTRHO_SAFE_ASSERT_CONTINUE(portGroup.groupId != kPortGroupNone);
                 DISTRHO_SAFE_ASSERT_CONTINUE(portGroup.symbol.isNotEmpty());
 
-                pluginString += "\n<" DISTRHO_PLUGIN_URI "#portGroup_" + portGroup.symbol + ">\n";
+                pluginString += "\n<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#portGroup_" + portGroup.symbol + ">\n";
                 isInput = isOutput = false;
 
 #if DISTRHO_PLUGIN_NUM_INPUTS > 0
-                for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS && !isInput; ++i)
+                for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs() && !isInput; ++i)
                     isInput = plugin.getAudioPort(true, i).groupId == portGroup.groupId;
 #endif
 
 #if DISTRHO_PLUGIN_NUM_OUTPUTS > 0
-                for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS && !isOutput; ++i)
+                for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs() && !isOutput; ++i)
                     isOutput = plugin.getAudioPort(false, i).groupId == portGroup.groupId;
 #endif
 
@@ -1265,7 +1267,7 @@ void lv2_generate_ttl(const char* const basename)
         modguiString += "@prefix modgui: <http://moddevices.com/ns/modgui#> .\n";
         modguiString += "\n";
 
-        modguiString += "<" DISTRHO_PLUGIN_URI ">\n";
+        modguiString += "<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + ">\n";
         modguiString += "    modgui:gui [\n";
        #ifdef DISTRHO_PLUGIN_BRAND
         modguiString += "        modgui:brand \"" DISTRHO_PLUGIN_BRAND "\" ;\n";
@@ -1319,9 +1321,9 @@ void lv2_generate_ttl(const char* const basename)
         jsString += "function(e,f){\n";
         jsString += "'use strict';\nvar ps=[";
 
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_INPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_inputs(); ++i)
             jsString += "'lv2_" + plugin.getAudioPort(false, i).symbol + "',";
-        for (uint32_t i=0; i < DISTRHO_PLUGIN_NUM_OUTPUTS; ++i)
+        for (uint32_t i=0; i < GodotDistrhoDynamicInfo::get_instance().get_number_outputs(); ++i)
             jsString += "'lv2_" + plugin.getAudioPort(true, i).symbol + "',";
        #if DISTRHO_LV2_USE_EVENTS_IN
         jsString += "'lv2_events_in',";
@@ -1355,11 +1357,11 @@ void lv2_generate_ttl(const char* const basename)
         jsString += "if(err.length!==0){e.icon.find('.canvas_wrapper').html('<h2>'+err.join('<br>')+'</h2>');return;}\n\n";
         jsString += "var s=document.createElement('script');\n";
         jsString += "s.setAttribute('async',true);\n";
-        jsString += "s.setAttribute('src',e.api_version>=3?f.get_custom_resource_filename('module.js'):('/resources/module.js?uri='+escape(\"" DISTRHO_PLUGIN_URI "\")+'&r='+VERSION));\n";
+        jsString += "s.setAttribute('src',e.api_version>=3?f.get_custom_resource_filename('module.js'):('/resources/module.js?uri='+escape(\"" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "\")+'&r='+VERSION));\n";
         jsString += "s.setAttribute('type','text/javascript');\n";
         jsString += "s.onload=function(){\n";
         jsString += " Module_" DISTRHO_PLUGIN_MODGUI_CLASS_NAME "({\n";
-        jsString += " locateFile: function(p,_){return e.api_version>=3?f.get_custom_resource_filename(p):('/resources/'+p+'?uri='+escape(\"" DISTRHO_PLUGIN_URI "\")+'&r='+VERSION)},\n";
+        jsString += " locateFile: function(p,_){return e.api_version>=3?f.get_custom_resource_filename(p):('/resources/'+p+'?uri='+escape(\"" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "\")+'&r='+VERSION)},\n";
         jsString += " postRun:function(m){\n";
         jsString += " var cn=e.icon.attr('mod-instance').replaceAll('/','_');\n";
         jsString += " var cnl=m.lengthBytesUTF8(cn) + 1;\n";
@@ -1565,7 +1567,7 @@ void lv2_generate_ttl(const char* const basename)
         uiString += "@prefix opts: <" LV2_OPTIONS_PREFIX "> .\n";
         uiString += "\n";
 
-        uiString += "<" DISTRHO_UI_URI ">\n";
+        uiString += "<" + GodotDistrhoDynamicInfo::get_instance().get_ui_uri() + ">\n";
 
         addAttribute(uiString, "lv2:extensionData", lv2ManifestUiExtensionData, 4);
         addAttribute(uiString, "lv2:optionalFeature", lv2ManifestUiOptionalFeatures, 4);
@@ -1607,7 +1609,7 @@ void lv2_generate_ttl(const char* const basename)
 
         DISTRHO_CUSTOM_SAFE_ASSERT_RETURN("Programs require parameters or full state", valid, presetsFile.close());
 
-        const String presetSeparator(std::strstr(DISTRHO_PLUGIN_URI, "#") != nullptr ? ":" : "#");
+        const String presetSeparator(std::strstr(GodotDistrhoDynamicInfo::get_instance().get_plugin_uri(), "#") != nullptr ? ":" : "#");
 
         char strBuf[0xff+1];
         strBuf[0xff] = '\0';
@@ -1637,7 +1639,7 @@ void lv2_generate_ttl(const char* const basename)
 
             plugin.loadProgram(i);
 
-            presetString = "<" DISTRHO_PLUGIN_URI + presetSeparator + "preset" + strBuf + ">\n";
+            presetString = "<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + presetSeparator + "preset" + strBuf + ">\n";
 
 # if DISTRHO_PLUGIN_WANT_FULL_STATE
             presetString += "    state:state [\n";
@@ -1649,7 +1651,7 @@ void lv2_generate_ttl(const char* const basename)
                 presetString += "        <";
 
                 if (plugin.getStateHints(j) & kStateIsHostReadable)
-                    presetString += DISTRHO_PLUGIN_URI "#";
+                    presetString += GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "#";
                 else
                     presetString += DISTRHO_PLUGIN_LV2_STATE_PREFIX;
 
