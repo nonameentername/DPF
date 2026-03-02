@@ -193,7 +193,7 @@ UI::PrivateData::createNextWindow(UI* const ui, uint width, uint height, const b
     ewData.width = width;
     ewData.height = height;
     ewData.scaleFactor = scaleFactor;
-    ewData.title = DISTRHO_PLUGIN_NAME;
+    ewData.title = GodotDistrhoDynamicInfo::get_instance().get_plugin_name();
     ewData.isStandalone = DISTRHO_UI_IS_STANDALONE;
     return ewData;
    #else

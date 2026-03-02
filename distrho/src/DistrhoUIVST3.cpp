@@ -180,7 +180,7 @@ public:
            #else
             DISTRHO_MACRO_AS_STRING(DISTRHO_NAMESPACE)
            #endif
-            "-" DISTRHO_PLUGIN_NAME "-"
+            "-" + GodotDistrhoDynamicInfo::get_instance().get_plugin_name() + "-"
         );
 
         char suffix[9];

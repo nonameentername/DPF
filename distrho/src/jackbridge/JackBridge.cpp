@@ -79,6 +79,8 @@ typedef void* lib_t;
 # include "SDL2Bridge.hpp"
 #endif
 
+#include "godot_distrho_dynamic_info.h" 
+
 // -----------------------------------------------------------------------------
 
 extern "C" {
@@ -1027,7 +1029,7 @@ const char* jackbridge_get_client_name(jack_client_t* client)
     return jack_get_client_name(client);
 #else
     if (usingNativeBridge)
-        return DISTRHO_PLUGIN_NAME;
+        return GodotDistrhoDynamicInfo::get_instance().get_plugin_name();
     if (getBridgeInstance().get_client_name_ptr != nullptr)
         return getBridgeInstance().get_client_name_ptr(client);
 #endif

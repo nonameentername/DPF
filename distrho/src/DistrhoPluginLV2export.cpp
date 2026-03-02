@@ -332,7 +332,7 @@ void lv2_generate_ttl(const char* const basename)
 
             const String& programName(plugin.getProgramName(i));
 
-            presetString  = "<" GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + presetSeparator + "preset" + strBuf + ">\n";
+            presetString  = "<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + presetSeparator + "preset" + strBuf + ">\n";
             presetString += "    a pset:Preset ;\n";
             presetString += "    lv2:appliesTo <" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + "> ;\n";
 
@@ -987,8 +987,8 @@ void lv2_generate_ttl(const char* const basename)
 
        #ifdef DISTRHO_PLUGIN_BRAND
         // MOD
-        pluginString += "    mod:brand \"" DISTRHO_PLUGIN_BRAND "\" ;\n";
-        pluginString += "    mod:label \"" DISTRHO_PLUGIN_NAME "\" ;\n\n";
+        pluginString += "    mod:brand \"" + GodotDistrhoDynamicInfo::get_instance().get_plugin_name() + "\" ;\n";
+        pluginString += "    mod:label \"" + GodotDistrhoDynamicInfo::get_instance().get_plugin_name() + "\" ;\n\n";
        #endif
 
         // name
@@ -1272,7 +1272,7 @@ void lv2_generate_ttl(const char* const basename)
        #ifdef DISTRHO_PLUGIN_BRAND
         modguiString += "        modgui:brand \"" DISTRHO_PLUGIN_BRAND "\" ;\n";
        #endif
-        modguiString += "        modgui:label \"" DISTRHO_PLUGIN_NAME "\" ;\n";
+        modguiString += "        modgui:label \"" + GodotDistrhoDynamicInfo::get_instance().get_plugin_name() + "\" ;\n";
         modguiString += "        modgui:resourcesDirectory <modgui> ;\n";
         modguiString += "        modgui:iconTemplate <modgui/icon.html> ;\n";
         modguiString += "        modgui:javascript <modgui/javascript.js> ;\n";

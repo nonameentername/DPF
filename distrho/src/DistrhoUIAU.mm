@@ -439,7 +439,8 @@ END_NAMESPACE_DISTRHO
 
 - (NSString*) description
 {
-    return @DISTRHO_PLUGIN_NAME;
+    return [NSString stringWithCString:GodotDistrhoDynamicInfo::get_instance().get_plugin_name() encoding:NSUTF8StringEncoding];
+    //return @DISTRHO_PLUGIN_NAME;
 }
 
 - (unsigned) interfaceVersion

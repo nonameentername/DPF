@@ -149,7 +149,7 @@ public:
         }
 
         if (windowTitle == nullptr)
-            windowTitle = DISTRHO_PLUGIN_NAME;
+            windowTitle = GodotDistrhoDynamicInfo::get_instance().get_plugin_name();
 
         fUI.setWindowTitle(windowTitle);
        #endif
@@ -684,7 +684,9 @@ static uint32_t lv2_set_options(LV2UI_Handle ui, const LV2_Options_Option* optio
 #if DISTRHO_PLUGIN_WANT_PROGRAMS
 static void lv2ui_select_program(LV2UI_Handle ui, uint32_t bank, uint32_t program)
 {
-    uiPtr->lv2ui_select_program(bank, program);
+    if (uiPtr != NULL) {
+        uiPtr->lv2ui_select_program(bank, program);
+    }
 }
 #endif
 

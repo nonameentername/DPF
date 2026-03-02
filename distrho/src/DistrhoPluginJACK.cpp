@@ -1050,7 +1050,7 @@ int main(int argc, char* argv[])
    #endif
 
     jack_status_t  status = jack_status_t(0x0);
-    jack_client_t* client = jackbridge_client_open(DISTRHO_PLUGIN_NAME, JackNoStartServer, &status);
+    jack_client_t* client = jackbridge_client_open(GodotDistrhoDynamicInfo::get_instance().get_plugin_name(), JackNoStartServer, &status);
 
    #ifdef HAVE_JACK
     #define STANDALONE_NAME "JACK client"
@@ -1101,7 +1101,7 @@ int main(int argc, char* argv[])
 
        #if defined(DISTRHO_OS_MAC)
         CFStringRef errorTitleRef = CFStringCreateWithCString(nullptr,
-           DISTRHO_PLUGIN_NAME ": Error", kCFStringEncodingUTF8);
+           GodotDistrhoDynamicInfo::get_instance().get_plugin_name() + ": Error", kCFStringEncodingUTF8);
         CFStringRef errorStringRef = CFStringCreateWithCString(nullptr,
            String("Failed to create " STANDALONE_NAME ", reason was:\n" + errorString).buffer(), kCFStringEncodingUTF8);
 

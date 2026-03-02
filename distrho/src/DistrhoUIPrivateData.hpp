@@ -131,7 +131,7 @@ public:
                #else
                 DISTRHO_MACRO_AS_STRING(DISTRHO_NAMESPACE)
                #endif
-                "-" DISTRHO_PLUGIN_NAME
+                "-" + GodotDistrhoDynamicInfo::get_instance().get_plugin_name()
             );
         }
         setClassName(className);
@@ -477,7 +477,7 @@ inline bool UI::PrivateData::fileRequestCallback(const char* const key)
     DISTRHO_SAFE_ASSERT_RETURN(uiStateFileKeyRequest != nullptr, false);
 
     char title[0xff];
-    snprintf(title, sizeof(title)-1u, DISTRHO_PLUGIN_NAME ": %s", key);
+    snprintf(title, sizeof(title)-1u, GodotDistrhoDynamicInfo::get_instance().get_plugin_name() + ": %s", key);
     title[sizeof(title)-1u] = '\0';
 
     DGL_NAMESPACE::FileBrowserOptions opts;
