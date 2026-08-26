@@ -1,4 +1,4 @@
 {
-    global: lv2_descriptor; lv2_generate_ttl;
+    global: lv2_descriptor; lv2_generate_ttl; lv2_generate_ttl_with_dir;
     local: *;
 };

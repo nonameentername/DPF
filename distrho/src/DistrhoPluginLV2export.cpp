@@ -231,8 +231,9 @@ static void addAttribute(DISTRHO_NAMESPACE::String& text,
 
 // --------------------------------------------------------------------------------------------------------------------
 
-DISTRHO_PLUGIN_EXPORT
-void lv2_generate_ttl(const char* const basename)
+static void lv2_generate_ttl_with_dir_impl(const char* const basename,
+                                           const char* const outputDir,
+                                           const char* const binaryExtension)
 {
     USE_NAMESPACE_DISTRHO
 
@@ -275,7 +276,7 @@ void lv2_generate_ttl(const char* const basename)
 
     {
         std::cout << "Writing manifest.ttl..."; std::cout.flush();
-        std::fstream manifestFile("manifest.ttl", std::ios::out);
+        std::fstream manifestFile(String(outputDir) + DISTRHO_OS_SEP_STR "manifest.ttl", std::ios::out);
 
         String manifestString;
         manifestString += "@prefix lv2:  <" LV2_CORE_PREFIX "> .\n";
@@ -293,7 +294,7 @@ void lv2_generate_ttl(const char* const basename)
 
         manifestString += "<" + GodotDistrhoDynamicInfo::get_instance().get_plugin_uri() + ">\n";
         manifestString += "    a lv2:Plugin ;\n";
-        manifestString += "    lv2:binary <" + pluginDLL + "." DISTRHO_DLL_EXTENSION "> ;\n";
+        manifestString += "    lv2:binary <" + pluginDLL + "." + String(binaryExtension) + "> ;\n";
 #if DISTRHO_PLUGIN_USES_MODGUI
         manifestString += "    rdfs:seeAlso <" + pluginTTL + "> ,\n";
         manifestString += "                 <modgui.ttl> .\n";
@@ -305,7 +306,7 @@ void lv2_generate_ttl(const char* const basename)
 #if DISTRHO_PLUGIN_HAS_UI
         manifestString += "<" + GodotDistrhoDynamicInfo::get_instance().get_ui_uri() + ">\n";
         manifestString += "    a ui:" DISTRHO_LV2_UI_TYPE " ;\n";
-        manifestString += "    ui:binary <" + pluginUI + "." DISTRHO_DLL_EXTENSION "> ;\n";
+        manifestString += "    ui:binary <" + pluginUI + "." + String(binaryExtension) + "> ;\n";
 # if DISTRHO_PLUGIN_WANT_DIRECT_ACCESS
         addAttribute(manifestString, "lv2:extensionData", lv2ManifestUiExtensionData, 4);
         addAttribute(manifestString, "lv2:optionalFeature", lv2ManifestUiOptionalFeatures, 4);
@@ -357,7 +358,7 @@ void lv2_generate_ttl(const char* const basename)
 
     {
         std::cout << "Writing " << pluginTTL << "..."; std::cout.flush();
-        std::fstream pluginFile(pluginTTL, std::ios::out);
+        std::fstream pluginFile(String(outputDir) + DISTRHO_OS_SEP_STR + pluginTTL, std::ios::out);
 
         String pluginString;
 
@@ -1260,7 +1261,7 @@ void lv2_generate_ttl(const char* const basename)
    #if DISTRHO_PLUGIN_USES_MODGUI && !DISTRHO_PLUGIN_USES_CUSTOM_MODGUI
     {
         std::cout << "Writing modgui.ttl..."; std::cout.flush();
-        std::fstream modguiFile("modgui.ttl", std::ios::out);
+        std::fstream modguiFile(String(outputDir) + DISTRHO_OS_SEP_STR "modgui.ttl", std::ios::out);
 
         String modguiString;
         modguiString += "@prefix lv2:    <" LV2_CORE_PREFIX "> .\n";
@@ -1559,7 +1560,7 @@ void lv2_generate_ttl(const char* const basename)
 #if DISTRHO_PLUGIN_HAS_UI && ! DISTRHO_PLUGIN_WANT_DIRECT_ACCESS
     {
         std::cout << "Writing " << uiTTL << "..."; std::cout.flush();
-        std::fstream uiFile(uiTTL, std::ios::out);
+        std::fstream uiFile(String(outputDir) + DISTRHO_OS_SEP_STR + uiTTL, std::ios::out);
 
         String uiString;
         uiString += "@prefix lv2:  <" LV2_CORE_PREFIX "> .\n";
@@ -1585,7 +1586,7 @@ void lv2_generate_ttl(const char* const basename)
 #if DISTRHO_PLUGIN_WANT_PROGRAMS
     {
         std::cout << "Writing presets.ttl..."; std::cout.flush();
-        std::fstream presetsFile("presets.ttl", std::ios::out);
+        std::fstream presetsFile(String(outputDir) + DISTRHO_OS_SEP_STR "presets.ttl", std::ios::out);
 
         String presetsString;
         presetsString += "@prefix lv2:   <" LV2_CORE_PREFIX "> .\n";
@@ -1716,4 +1717,19 @@ void lv2_generate_ttl(const char* const basename)
         std::cout << " done!" << std::endl;
     }
 #endif
+
+}
+
+DISTRHO_PLUGIN_EXPORT
+void lv2_generate_ttl_with_dir(const char* const basename, const char* const outputDir, const char* const binaryExtension)
+{
+    lv2_generate_ttl_with_dir_impl(basename, outputDir, binaryExtension);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+
+DISTRHO_PLUGIN_EXPORT
+void lv2_generate_ttl(const char* const basename)
+{
+    lv2_generate_ttl_with_dir(basename, ".", DISTRHO_DLL_EXTENSION);
 }

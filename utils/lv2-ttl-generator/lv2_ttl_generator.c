@@ -30,6 +30,7 @@
 #endif
 
 typedef void (*TTL_Generator_Function)(const char* basename);
+typedef void (*TTL_Generator_Path_Function)(const char* basename, const char* outputDir, const char* binaryExtension);
 
 static int isPathSeparator(char c);
 static char* makeNormalPath(const char* path);
@@ -38,13 +39,15 @@ static char* makeNormalPath(const char* path);
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2)
+    if (argc != 2 && argc != 4)
     {
-        printf("usage: %s /path/to/plugin-DLL\n", argv[0]);
+        printf("usage: %s /path/to/plugin-DLL [output-dir binary-extension]\n", argv[0]);
         return 1;
     }
 
     const char* path = argv[1];
+    const char* outputDir = argc >= 3 ? argv[2] : NULL;
+    const char* binaryExtension = argc >= 4 ? argv[3] : NULL;
 
 #ifdef TTL_GENERATOR_WINDOWS
     const HMODULE handle = LoadLibraryA(path);
@@ -67,15 +70,19 @@ int main(int argc, char* argv[])
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wcast-function-type"
 # endif
+    const TTL_Generator_Path_Function ttlPathFn =
+        (TTL_Generator_Path_Function)GetProcAddress(handle, "lv2_generate_ttl_with_dir");
     const TTL_Generator_Function ttlFn = (TTL_Generator_Function)GetProcAddress(handle, "lv2_generate_ttl");
 # if defined(__GNUC__) && (__GNUC__ >= 9)
 #  pragma GCC diagnostic pop
 # endif
 #else
+    const TTL_Generator_Path_Function ttlPathFn =
+        (TTL_Generator_Path_Function)dlsym(handle, "lv2_generate_ttl_with_dir");
     const TTL_Generator_Function ttlFn = (TTL_Generator_Function)dlsym(handle, "lv2_generate_ttl");
 #endif
 
-    if (ttlFn != NULL)
+    if (ttlPathFn != NULL || ttlFn != NULL)
     {
         // convert the paths to a normalized form, such that path separators are
         // replaced with '/', and duplicate separators are removed
@@ -100,8 +107,18 @@ int main(int argc, char* argv[])
 
         printf("Generate ttl data for '%s', basename: '%s'\n", path, basename);
 
-        ttlFn(basename);
+        char* outputPath = NULL;
+        if (outputDir != NULL && outputDir[0] != '\0')
+            outputPath = makeNormalPath(outputDir);
 
+        if (ttlPathFn != NULL && outputPath != NULL && binaryExtension != NULL)
+            ttlPathFn(basename, outputPath, binaryExtension);
+        else if (ttlFn != NULL)
+            ttlFn(basename);
+        else
+            printf("Failed to find a compatible ttl generation function\n");
+
+        free(outputPath);
         free(normalPath);
     }
     else

@@ -2,3 +2,4 @@ EXPORTS
 lv2_descriptor
 lv2ui_descriptor
 lv2_generate_ttl
+lv2_generate_ttl_with_dir
